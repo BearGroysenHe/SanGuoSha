@@ -25,7 +25,7 @@ class Server():
                     con, addr = r.accept()
                     self.rlist.append(con)
                 else:
-                    response = r.recv(512).decode()
+                    response = r.recv(2048).decode()
                     response = self.dataunpack.unpack(response)
                     if response[0] == 'C' and response[1] == 'room_numb':
                         data = response[2]
@@ -46,10 +46,12 @@ class Server():
                             if con == None:
                                 break
                         else:
+                            for con in self.game_room[data].values():
+                                self.rlist.remove(con)
                             game_controller = GameController(self.game_room[data])
                             p = Process(target = game_controller.run_game)
                             p.start()
-                            del self.game_room[data]
+
 
 if __name__ == '__main__':
     server = Server()

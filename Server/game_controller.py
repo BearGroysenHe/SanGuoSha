@@ -28,16 +28,37 @@ class GameController():
             self.players[player_num]['equip'] = {"horse_add": None, "houser_sub": None, "armour": None, "weapon": None}
             self.players[player_num]['identity'] = None
         self.total_card = []
+        self.drop_card = []
 
     def run_game(self):
         self.datapack.pack_msg('00','人数已满，正在进入游戏')
         self.__init()
+        for key, value in self.players.items():
+            if value['identity'] == '主公':
+                player = key
+                break
+        while True:
+            print(player)
+            self.__beginning()
+            self.__judgment()
+            self.__get_card(player)
+            self.__push_card(player)
+            self.__drop_card(player)
+            self.__ending()
+            player = int(player) + 1
+            print(player)
+            if player > 5:
+                player -= 5
+            player = str(player).zfill(2)
+            print(player)
 
     def __init(self):
         self.__card_creater()
         self.__identity_creater()
         self.__choice_hero()
         self.__send_hero_to_player()
+        for con in self.players_socket.values():
+            self.__send_card_to_player(4,con)
 
     def __card_creater(self):
         type = ('Sha','Shan','Tao')
@@ -51,6 +72,7 @@ class GameController():
 
     def __identity_creater(self):
         identity_pool = ['主公','忠臣','内奸','反贼','反贼']
+        # identity_pool = ['主公']
         for i in range(1,len(self.players.keys())+1):
             identity = identity_pool[randint(0, len(identity_pool)-1)]
             self.players[str(i).zfill(2)]['identity'] = identity
@@ -70,7 +92,7 @@ class GameController():
                 if condition:
                     rl,wl,xl = select(self.rlist,[],[])
                     for r in rl:
-                        data = r.recv(512).decode()
+                        data = r.recv(2048).decode()
                         data = self.dataunpack.unpack(data)
                         player = self.__get_player_by_con(r)
                         hero = data[2]
@@ -109,6 +131,47 @@ class GameController():
 
     def __send_hero_to_player(self):
         self.datapack.pack_order({'name':'send_hero','data':self.players})
+
+    def __send_card_to_player(self,numb,target):
+        for i in range(numb):
+            card = self.total_card.pop()
+            self.datapack.pack_order({'name':'send_card','data':card},target)
+
+    def __beginning(self):
+        pass
+
+    def __judgment(self):
+        pass
+
+    def __get_card(self,player):
+        self.__send_card_to_player(2,self.players_socket[player])
+
+    def __push_card(self,player):
+        self.datapack.pack_order({'name':'push_card','data':None},self.players_socket[player])
+        while True:
+            data = self.players_socket[player].recv(2048).decode()
+            data = self.dataunpack.unpack(data)
+            if data[0] == 'C':
+                if data[1] == 'push_card':
+                    # self.datapack.pack_msg('玩家%s打出了一张%s'%(player,data[2]['name']))
+                    print('玩家%s打出了一张%s'%(player,data[2]))
+                    pass
+                elif data[1] == 'drop_card':
+                    break
+
+    def __drop_card(self,player):
+        while True:
+            data = self.players_socket[player].recv(2048).decode()
+            data = self.dataunpack.unpack(data)
+            if data[0] == 'C' and data[1] == 'drop_card':
+                if data[2] == 'OK':
+                    break
+                else:
+                    self.drop_card.append(data[2])
+                    print('玩家%s丢弃了%s'%(player,data[2]))
+
+    def __ending(self):
+        pass
 
 # game_controller = GameController(players)
 # game_controller.run_game()
