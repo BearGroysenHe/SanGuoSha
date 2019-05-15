@@ -4,6 +4,7 @@ import json
 from select import select
 from datapack import DataPack
 from dataunpack import DataUnPack
+from skill_releaser import SkillReleaser
 
 # sk = socket.socket()
 # sk.bind(('127.0.0.1',8999))
@@ -17,6 +18,7 @@ class GameController():
             self.setting_hero = json.loads(f.read(),encoding='utf-8')
         self.players = {}
         self.players_socket = players_socket
+        self.players_socket['all'] = None
         self.rlist = []
         for con in self.players_socket.values():
             self.rlist.append(con)
@@ -27,6 +29,7 @@ class GameController():
             self.players[player_num]['equip'] = {}
             self.players[player_num]['equip'] = {"horse_add": None, "houser_sub": None, "armour": None, "weapon": None}
             self.players[player_num]['identity'] = None
+        self.skill_releaser = SkillReleaser(self.players_socket)
         self.total_card = []
         self.drop_card = []
 
@@ -149,15 +152,21 @@ class GameController():
     def __push_card(self,player):
         self.datapack.pack_order({'name':'push_card','data':None},self.players_socket[player])
         while True:
-            data = self.players_socket[player].recv(2048).decode()
-            data = self.dataunpack.unpack(data)
-            if data[0] == 'C':
-                if data[1] == 'push_card':
-                    # self.datapack.pack_msg('玩家%s打出了一张%s'%(player,data[2]['name']))
-                    print('玩家%s打出了一张%s'%(player,data[2]))
-                    pass
-                elif data[1] == 'drop_card':
-                    break
+            rl,wl,xl = select(self.rlist,[],[])
+            for r in rl:
+                data = r.recv(2048)
+                data = self.dataunpack.unpack(data)
+                if data[0] == 'C':
+                    if data[1] == 'push_card':
+                        # self.datapack.pack_msg('玩家%s打出了一张%s'%(player,data[2]['name'])
+                        responses = self.skill_releaser.push_card(data[2])
+                        for respone in responses:
+                            if respone[0] == 'msg':
+                                self.datapack.pack_msg(respone[1],self.players_socket[respone[2]])
+                            elif respone[0] == 'order':
+                                self.datapack.pack_order(respone[1],self.players_socket[respone[2]])
+                    elif data[1] == 'drop_card':
+                        break
 
     def __drop_card(self,player):
         while True:

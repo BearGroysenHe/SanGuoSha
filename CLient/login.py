@@ -52,7 +52,7 @@ class Client():
                         elif data[1] == 'send_hero':
                             self.__get_hero_setting(data)
                         elif data[1] == 'send_card':
-                            self.card.append(data[2])
+                            self.__send_card(data[2])
                         elif data[1] == 'push_card':
                             self.__push_card()
                 else:
@@ -86,7 +86,12 @@ class Client():
                 break
             else:
                 self.datapack.pack_order({'name':'push_card','data':self.card[int(card_index)]})
-                self.card.pop(int(card_index))
+                card = self.card.pop(int(card_index))
+                response = self.sk.recv(2048).decode()
+                response = self.dataunpack.unpack(response)
+                if response[0] == 'C' and response[1] == 'push_card' and response[2]['status'] == 'failed':
+                    print(response[2]['msg'])
+                    self.card.append(card)
         self.__drop_card()
 
     def __drop_card(self):
@@ -103,7 +108,10 @@ class Client():
                 self.datapack.pack_order({'name':'drop_card','data':'OK'})
                 break
 
-
+    def __send_card(self,card):
+        card['from'] = self.player_numb
+        card['to'] = None
+        self.card.append(card)
 
 if __name__ == '__main__':
     client = Client()
