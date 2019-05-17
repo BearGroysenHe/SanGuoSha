@@ -13,8 +13,8 @@ class SkillReleaser():
             skills = json.loads(f.read(), encoding='utf-8')
         for key, value in skills.items():
             exec('from setting.skill.%s import %s' % (key, value))
-            exec('%s = %s()'%(key,value))
-            exec('self.skills = %s.add(self.skills)'%key)
+            exec('self.%s = %s()'%(key,value))
+            exec('self.skills = self.%s.add(self.skills)'%key)
 
 
     def beginning(self):
@@ -26,18 +26,20 @@ class SkillReleaser():
     def get_card(self):
         pass
 
-    def push_card(self,skill):
+    def push_card(self,card,players):
         for skill in self.skills['cards']:
-            exec('response = %s.hook(skill,self.players)'%skill)
-            if response != None:
-                return response
+            # response = self.tao.hook(card,players)
+            exec('self.response = self.%s.hook(card,players)'%skill)
+            print(self.response)
+            if self.response != None:
+                return self.response
+        return None
     def drop_card(self):
         pass
 
     def ending(self):
         pass
 
-players = {'01':None,'02':None,'03':None,'04':None,'05':None}
-
-skillreleaser = SkillReleaser(players)
-print(skillreleaser.skills)
+# players = {'01':None,'02':None,'03':None,'04':None,'05':None}
+# skillreleaser = SkillReleaser(players)
+# skillreleaser.push_card({'name':'Tao'})

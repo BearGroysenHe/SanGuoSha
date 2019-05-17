@@ -8,7 +8,6 @@ import signal
 
 class Server():
     def __init__(self):
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
         self.sk = socket.socket()
         self.sk.bind(('127.0.0.1', 8999))
         self.sk.listen(5)
@@ -32,7 +31,6 @@ class Server():
                         if data not in self.game_room:
                             self.game_room[data]= {'01':None,'02':None,'03':None,'04':None,'05':None}
                             self.game_room[data]['01'] = r
-                            print(self.game_room)
                             self.datapack.pack_order({'name':'room_numb','data':'OK'},r)
                             self.datapack.pack_order({'name': 'player_numb', 'data': '01'}, r)
                         else:
@@ -54,5 +52,6 @@ class Server():
 
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
     server = Server()
     server.log_in()

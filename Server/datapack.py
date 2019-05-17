@@ -20,6 +20,7 @@ class DataPack():
     def __send_pack(self,pack,target):
         if target == None:
             for con in self.players_socket.values():
-                con.send(pack)
+                if con != None:
+                    con.send(pack)
         else:
             target.send(pack)
